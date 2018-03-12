@@ -38,6 +38,10 @@ public class neuralnet {
 	private static CSVReader trainData;
 	private static CSVReader validData;
 	
+	// cross entropies
+	private static List<Double> trainEntropies = new ArrayList<>();
+	private static List<Double> validEntropies = new ArrayList<>();
+	
 	private static double uniformRandom(Random r, double min, double max) {
 		return min + (max - min) * r.nextDouble();
 	}
@@ -230,9 +234,41 @@ public class neuralnet {
 		return softmaxLst;
 	}
 	
+	private static double getEntropy(CSVReader data) {
+		
+		double entropy = 0;
+		
+		for (int i = 0; i < data.getNumberOfData(); i ++) {
+			
+			// get input data
+			List<Double> x = data.getPixelsForLetter(i);
+			x.add(0, new Double(1));
+			assert(x.size() == M + 1);
+			
+			// calculate y hat
+			List<Double> yHatTemp = multMatrixWithVector(alpha, x, D, M + 1);
+			yHatTemp.add(0, new Double(1));
+			List<Double> yHat = multMatrixWithVector(beta, yHatTemp, K, D + 1);
+			
+			// calculate y_k times log y_hat
+			int label = data.getLabel(i);
+			entropy += Math.log(yHat.get(label));
+			
+		}
+		
+		// calculate mean entropy
+		entropy = (-1) * entropy / data.getNumberOfData();
+		
+		return entropy;
+		
+	}
+	
 	private static void trainModel() {
-		// TODO
+		
+		// train the neural network for the given number of epochs
 		for (int epoch = 0; epoch < numEpochs; epoch ++) {
+			
+			// update the matrix parameters by each letter instance
 			for (int i = 0; i < trainData.getNumberOfData(); i ++) {
 				
 				// the pixel vector
@@ -307,6 +343,8 @@ public class neuralnet {
 				updateBeta(gBeta);
 				
 				// ------ calculate cross entropy ------ //
+				trainEntropies.add(getEntropy(trainData));
+				validEntropies.add(getEntropy(validData));
 			}
 		}
 	}
@@ -354,6 +392,20 @@ public class neuralnet {
 		
 		// train the model
 		trainModel();
+		printOneDimensionDoubleList(trainEntropies, "Train Entropies");
+		printOneDimensionDoubleList(validEntropies, "Validation Entropies");
+		
+	}
+	
+	// TODO : delete this
+	private static void printOneDimensionDoubleList(List<Double> lst, String name) {
+		System.out.println("Print List : " + name);
+		System.out.print("<");
+		for (Double d : lst) {
+			System.out.print(d);
+			System.out.print(", ");
+		}
+		System.out.println(">");
 	}
 }
 
