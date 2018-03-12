@@ -534,7 +534,7 @@ public class neuralnet {
 		}
 		else if (initFlag == 2) {
 			alpha = initZeroMatrix(D, M + 1);
-			beta = initRandomMatrix(K, D + 1);
+			beta = initZeroMatrix(K, D + 1);
 		}
 		else {
 			throw new Exception ("Wrong init flag.");
