@@ -1,4 +1,6 @@
-
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -9,8 +11,8 @@ public class neuralnet {
 	/* ------------ constants --------------- */
 	
 	private static final int NUM_ARGS = 9;
-	private static final double RANDOM_MIN = -1;
-	private static final double RANDOM_MAX = 1;
+	private static final double RANDOM_MIN = -0.1;
+	private static final double RANDOM_MAX = 0.1;
 	
 	/* ------------ class variables --------------- */
 
@@ -41,6 +43,10 @@ public class neuralnet {
 	// cross entropies
 	private static List<Double> trainEntropies = new ArrayList<>();
 	private static List<Double> validEntropies = new ArrayList<>();
+	
+	// prediction error rates
+	private static double trainError;
+	private static double validError;
 	
 	private static double uniformRandom(Random r, double min, double max) {
 		return min + (max - min) * r.nextDouble();
@@ -206,13 +212,19 @@ public class neuralnet {
 		}
 	}
 	
-	private static double sigmoid(double d) {
-		double numerator = 1;
-		double denominator = 1 + Math.exp(-d);
-		return numerator / denominator;
+	private static List<Double> applySigmoidToList(List<Double> lst) {
+		assert(lst != null);
+		
+		List<Double> newLst = new ArrayList<>();
+		for (Double d : lst) {
+			double sigmoidD = 1.0 / (1 + Math.exp((-1.0) * d.doubleValue()));
+			newLst.add(sigmoidD);
+		}
+		
+		return newLst;
 	}
 	
-	private static List<Double> softmax(List<Double> lst) {
+	private static List<Double> applySoftmaxToList(List<Double> lst) {
 		assert(lst != null);
 		
 		List<Double> expLst = new ArrayList<>();
@@ -236,6 +248,11 @@ public class neuralnet {
 	
 	private static double getEntropy(CSVReader data) {
 		
+		// TODO : delete this
+		System.out.println("--------------------------");
+		System.out.println("------- getEntropy -------");
+		System.out.println("--------------------------");
+		
 		double entropy = 0;
 		
 		for (int i = 0; i < data.getNumberOfData(); i ++) {
@@ -247,8 +264,10 @@ public class neuralnet {
 			
 			// calculate y hat
 			List<Double> yHatTemp = multMatrixWithVector(alpha, x, D, M + 1);
+			yHatTemp = applySigmoidToList(yHatTemp);
 			yHatTemp.add(0, new Double(1));
 			List<Double> yHat = multMatrixWithVector(beta, yHatTemp, K, D + 1);
+			yHat = applySoftmaxToList(yHat);
 			
 			// calculate y_k times log y_hat
 			int label = data.getLabel(i);
@@ -268,8 +287,16 @@ public class neuralnet {
 		// train the neural network for the given number of epochs
 		for (int epoch = 0; epoch < numEpochs; epoch ++) {
 			
+			// TODO : delete this
+			System.out.println("-----------------------");
+			System.out.println("--- Epoch " + epoch + " ---");
+			System.out.println("-----------------------");
+			
 			// update the matrix parameters by each letter instance
 			for (int i = 0; i < trainData.getNumberOfData(); i ++) {
+
+				// TODO : delete this
+				System.out.println("--- Letter Idx " + i + " ---");
 				
 				// the pixel vector
 				List<Double> x = trainData.getPixelsForLetter(i);
@@ -280,30 +307,53 @@ public class neuralnet {
 				
 				// a = αx
 				List<Double> a = multMatrixWithVector(alpha, x, D, M + 1);
+
+				// TODO : delete this
+				printOneDimensionDoubleList(a, "a");
 				
 				// z = σ(a)
-				List<Double> z = a.stream().map(d -> sigmoid(d)).collect(Collectors.toList());
+				List<Double> z = applySigmoidToList(a);
 				// TODO : not sure if bias should be added here or before this step
-				assert(z.size() == D);
 				z.add(0, new Double(1));
+
+				// TODO : delete this
+				printOneDimensionDoubleList(z, "z");
 				
 				// b = βz
 				assert(z.size() == D + 1);
 				List<Double> b = multMatrixWithVector(beta, z, K, D + 1);
+
+				// TODO : delete this
+				printOneDimensionDoubleList(b, "b");
 				
 				// y-hat = softmax(b)
 				assert(b.size() == K);
-				List<Double> yHat = softmax(b);
+				List<Double> yHat = applySoftmaxToList(b);
 				assert(yHat.size() == K);
+				
+				// TODO : delete this
+				printOneDimensionDoubleList(yHat, "yHat");
+				// TODO : delete this
+				double fullProb = 0;
+				for (Double prob : yHat) {
+					fullProb += prob;
+				}
+				System.out.println("sum(yHat) = " + fullProb);
 				
 				// J = −y^T log(yHat)
 				int label = trainData.getLabel(i);
 				double j = (-1) * (Math.log(yHat.get(label)));
 				
+				// TODO : delete this
+				System.out.println("J = " + j);
+				
 				// ------ NNBackward ------ //
 				
 				// g_yHat = − y ÷ yHat
-				double gYHat = (-1) * (1 / yHat.get(label));
+				double gYHat = (-1) * (1.0 / yHat.get(label));
+				
+				// TODO : delete this
+				System.out.println("gYHat = " + gYHat);
 				
 				// gb
 				List<Double> gb = new ArrayList<>();
@@ -320,20 +370,37 @@ public class neuralnet {
 				}
 				assert(gb.size() == K);
 				
+				// TODO : delete this
+				printOneDimensionDoubleList(gb, "gb");
+				
 				// gBeta
 				List<List<Double>> gBeta = multVectorWithVector(gb, z, K, D + 1);
+				
+				printDoubleMatrix(gBeta, "gBeta");
 				
 				// gz
 				List<Double> gz = multRevMatrixWithVector(beta, gb, K, D + 1);
 				assert(gz.size() == D + 1);
 				
+				// TODO : delete this
+				printOneDimensionDoubleList(gz, "gz");
+				
 				// ga = gz ⊙ z ⊙ (1 − z)
-				List<Double> oneMinusZ = gz.stream().map(d -> 1 - d).collect(Collectors.toList());
+				// List<Double> oneMinusZ = applyOneMinusToList(gz);
+				List<Double> oneMinusZ = z.stream().map(d -> 1 - d).collect(Collectors.toList());
 				List<Double> ga = elemWiseMultVectors(gz, elemWiseMultVectors(z, oneMinusZ));
+
+				// TODO : delete this
+				printOneDimensionDoubleList(oneMinusZ, "oneMinusZ");
+				// TODO : delete this
+				printOneDimensionDoubleList(ga, "ga");
 				
 				// gAlpha = ga * x^T
 				ga.remove(0); // remove bias term
 				List<List<Double>> gAlpha = multVectorWithVector(ga, x, D, M + 1);
+				
+				// TODO : delete this
+				// printDoubleMatrix(gAlpha, "gAlpha");
 				
 				// ------ update parameter matrices ------ //
 				
@@ -341,14 +408,92 @@ public class neuralnet {
 				updateAlpha(gAlpha);
 				// update beta
 				updateBeta(gBeta);
-				
-				// ------ calculate cross entropy ------ //
-				trainEntropies.add(getEntropy(trainData));
-				validEntropies.add(getEntropy(validData));
+
+				// TODO : delete this
+				// printDoubleMatrix(alpha, "alpha");
+				// TODO : delete this
+				// printDoubleMatrix(beta, "beta");
+			
 			}
+			
+			// ------ calculate cross entropy ------ //
+			trainEntropies.add(getEntropy(trainData));
+			validEntropies.add(getEntropy(validData));
 		}
 	}
 	
+	private static double predictLabels(CSVReader data, String outPath) throws FileNotFoundException {
+		
+		// number of wrong predictions
+		double numWrongPred = 0;
+		
+		// open the writer
+		File outFile = new File(outPath);
+		PrintWriter wr = new PrintWriter(outFile);
+		
+		// predict label for each instance
+		for (int i = 0; i < data.getNumberOfData(); i ++) {
+			
+			// the input vector
+			List<Double> x = data.getPixelsForLetter(i);
+			x.add(0, new Double(1));
+			
+			// get hidden layer
+			List<Double> hidden = multMatrixWithVector(alpha, x, D, M + 1);
+			hidden.add(0, new Double(1));
+			
+			// predict the labels
+			List<Double> labels = multMatrixWithVector(beta, hidden, K, D + 1);
+			
+			// find the label with maximum probability
+			int predLabel = 0;
+			double maxProb = labels.get(0);
+			for (int k = 1; k < K; k ++) {
+				if (labels.get(k) > maxProb) {
+					maxProb = labels.get(k);
+					predLabel = k;
+				}
+			}
+			
+			// compare the predicted label with the original label
+			if (predLabel != data.getLabel(i)) {
+				numWrongPred += 1;
+			}
+			
+			// write the prediction
+			wr.println(predLabel);
+		}
+		
+		wr.close();
+		return numWrongPred / new Double(data.getNumberOfData());
+	}
+	
+	private static void outputMetrics() throws FileNotFoundException {
+		
+		// output the entropies and the error rates
+		File metricsOut = new File(metricsOutPath);
+		PrintWriter wr = new PrintWriter(metricsOut);
+		
+		// output the entropies
+		for (int epoch = 0; epoch < numEpochs; epoch ++) {
+			// output entropy for training data
+			String trainStr = "epoch=" + (epoch + 1) + " crossentropy(train): ";
+			trainStr += trainEntropies.get(epoch);
+			wr.println(trainStr);
+			// output entropy for validation data
+			String validStr = "epoch=" + (epoch + 1) + " crossentropy(validation): ";
+			validStr += validEntropies.get(epoch);
+			wr.println(validStr);
+		}
+		
+		// output error rates
+		String trainStr = "error(train): " + trainError;
+		String validStr = "error(validation): " + validError;
+		wr.println(trainStr);
+		wr.println(validStr);
+		
+		wr.close();
+	}
 	
 	public static void main(String[] args) throws Exception {
 		
@@ -372,6 +517,11 @@ public class neuralnet {
 		trainData = new CSVReader(trainInPath, ",");
 		validData = new CSVReader(validInPath, ",");
 		
+		// TODO : delete this
+		System.out.println("trainData size : " + trainData.getNumberOfData());
+		System.out.println("trainData.getPixelsForLetter(0).size() : " + trainData.getPixelsForLetter(0).size());
+		System.out.println("trainData labels : " + trainData.getLabels());
+		
 		// set the dimensions
 		K = 10;
 		D = hiddenUnits;
@@ -390,10 +540,20 @@ public class neuralnet {
 			throw new Exception ("Wrong init flag.");
 		}
 		
+		// TODO : delete this
+		printDoubleMatrix(beta, "Init Beta");
+		
 		// train the model
 		trainModel();
 		printOneDimensionDoubleList(trainEntropies, "Train Entropies");
 		printOneDimensionDoubleList(validEntropies, "Validation Entropies");
+		
+		// predict the labels
+		trainError = predictLabels(trainData, trainOutPath);
+		validError = predictLabels(validData, validOutPath);
+
+		// output the entropies and prediction error rates
+		outputMetrics();
 		
 	}
 	
@@ -404,6 +564,25 @@ public class neuralnet {
 		for (Double d : lst) {
 			System.out.print(d);
 			System.out.print(", ");
+		}
+		System.out.println(">");
+	}
+	
+	// TODO : delete this
+	private static void printDoubleMatrix(List<List<Double>> m, String name) {
+		assert(m != null);
+		
+		System.out.println("Print Matrix : " + name);
+		System.out.println("<");
+		for (int i = 0; i < m.size(); i ++) {
+			System.out.print("<");
+			for (int j = 0; j < m.get(i).size(); j ++) {
+				if (j != 0) {
+					System.out.print(", ");
+				}
+				System.out.print(m.get(i).get(j));
+			}
+			System.out.println(">");
 		}
 		System.out.println(">");
 	}
