@@ -1,3 +1,4 @@
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -248,11 +249,6 @@ public class neuralnet {
 	
 	private static double getEntropy(CSVReader data) {
 		
-		// TODO : delete this
-		System.out.println("--------------------------");
-		System.out.println("------- getEntropy -------");
-		System.out.println("--------------------------");
-		
 		double entropy = 0;
 		
 		for (int i = 0; i < data.getNumberOfData(); i ++) {
@@ -287,16 +283,8 @@ public class neuralnet {
 		// train the neural network for the given number of epochs
 		for (int epoch = 0; epoch < numEpochs; epoch ++) {
 			
-			// TODO : delete this
-			System.out.println("-----------------------");
-			System.out.println("--- Epoch " + epoch + " ---");
-			System.out.println("-----------------------");
-			
 			// update the matrix parameters by each letter instance
 			for (int i = 0; i < trainData.getNumberOfData(); i ++) {
-
-				// TODO : delete this
-				System.out.println("--- Letter Idx " + i + " ---");
 				
 				// the pixel vector
 				List<Double> x = trainData.getPixelsForLetter(i);
@@ -307,53 +295,28 @@ public class neuralnet {
 				
 				// a = αx
 				List<Double> a = multMatrixWithVector(alpha, x, D, M + 1);
-
-				// TODO : delete this
-				printOneDimensionDoubleList(a, "a");
 				
 				// z = σ(a)
 				List<Double> z = applySigmoidToList(a);
-				// TODO : not sure if bias should be added here or before this step
 				z.add(0, new Double(1));
-
-				// TODO : delete this
-				printOneDimensionDoubleList(z, "z");
 				
 				// b = βz
 				assert(z.size() == D + 1);
 				List<Double> b = multMatrixWithVector(beta, z, K, D + 1);
-
-				// TODO : delete this
-				printOneDimensionDoubleList(b, "b");
 				
 				// y-hat = softmax(b)
 				assert(b.size() == K);
 				List<Double> yHat = applySoftmaxToList(b);
 				assert(yHat.size() == K);
 				
-				// TODO : delete this
-				printOneDimensionDoubleList(yHat, "yHat");
-				// TODO : delete this
-				double fullProb = 0;
-				for (Double prob : yHat) {
-					fullProb += prob;
-				}
-				System.out.println("sum(yHat) = " + fullProb);
-				
 				// J = −y^T log(yHat)
 				int label = trainData.getLabel(i);
 				double j = (-1) * (Math.log(yHat.get(label)));
-				
-				// TODO : delete this
-				System.out.println("J = " + j);
 				
 				// ------ NNBackward ------ //
 				
 				// g_yHat = − y ÷ yHat
 				double gYHat = (-1) * (1.0 / yHat.get(label));
-				
-				// TODO : delete this
-				System.out.println("gYHat = " + gYHat);
 				
 				// gb
 				List<Double> gb = new ArrayList<>();
@@ -370,37 +333,21 @@ public class neuralnet {
 				}
 				assert(gb.size() == K);
 				
-				// TODO : delete this
-				printOneDimensionDoubleList(gb, "gb");
-				
 				// gBeta
 				List<List<Double>> gBeta = multVectorWithVector(gb, z, K, D + 1);
-				
-				printDoubleMatrix(gBeta, "gBeta");
 				
 				// gz
 				List<Double> gz = multRevMatrixWithVector(beta, gb, K, D + 1);
 				assert(gz.size() == D + 1);
 				
-				// TODO : delete this
-				printOneDimensionDoubleList(gz, "gz");
-				
 				// ga = gz ⊙ z ⊙ (1 − z)
 				// List<Double> oneMinusZ = applyOneMinusToList(gz);
 				List<Double> oneMinusZ = z.stream().map(d -> 1 - d).collect(Collectors.toList());
 				List<Double> ga = elemWiseMultVectors(gz, elemWiseMultVectors(z, oneMinusZ));
-
-				// TODO : delete this
-				printOneDimensionDoubleList(oneMinusZ, "oneMinusZ");
-				// TODO : delete this
-				printOneDimensionDoubleList(ga, "ga");
 				
 				// gAlpha = ga * x^T
 				ga.remove(0); // remove bias term
 				List<List<Double>> gAlpha = multVectorWithVector(ga, x, D, M + 1);
-				
-				// TODO : delete this
-				// printDoubleMatrix(gAlpha, "gAlpha");
 				
 				// ------ update parameter matrices ------ //
 				
@@ -408,11 +355,6 @@ public class neuralnet {
 				updateAlpha(gAlpha);
 				// update beta
 				updateBeta(gBeta);
-
-				// TODO : delete this
-				// printDoubleMatrix(alpha, "alpha");
-				// TODO : delete this
-				// printDoubleMatrix(beta, "beta");
 			
 			}
 			
@@ -440,17 +382,19 @@ public class neuralnet {
 			
 			// get hidden layer
 			List<Double> hidden = multMatrixWithVector(alpha, x, D, M + 1);
+			hidden = applySigmoidToList(hidden);
 			hidden.add(0, new Double(1));
 			
 			// predict the labels
-			List<Double> labels = multMatrixWithVector(beta, hidden, K, D + 1);
+			List<Double> labelProbs = multMatrixWithVector(beta, hidden, K, D + 1);
+			labelProbs = applySoftmaxToList(labelProbs);
 			
 			// find the label with maximum probability
 			int predLabel = 0;
-			double maxProb = labels.get(0);
+			double maxProb = labelProbs.get(0);
 			for (int k = 1; k < K; k ++) {
-				if (labels.get(k) > maxProb) {
-					maxProb = labels.get(k);
+				if (labelProbs.get(k) > maxProb) {
+					maxProb = labelProbs.get(k);
 					predLabel = k;
 				}
 			}
@@ -516,12 +460,7 @@ public class neuralnet {
 		// read the data
 		trainData = new CSVReader(trainInPath, ",");
 		validData = new CSVReader(validInPath, ",");
-		
-		// TODO : delete this
-		System.out.println("trainData size : " + trainData.getNumberOfData());
-		System.out.println("trainData.getPixelsForLetter(0).size() : " + trainData.getPixelsForLetter(0).size());
-		System.out.println("trainData labels : " + trainData.getLabels());
-		
+
 		// set the dimensions
 		K = 10;
 		D = hiddenUnits;
@@ -540,13 +479,8 @@ public class neuralnet {
 			throw new Exception ("Wrong init flag.");
 		}
 		
-		// TODO : delete this
-		printDoubleMatrix(beta, "Init Beta");
-		
 		// train the model
 		trainModel();
-		printOneDimensionDoubleList(trainEntropies, "Train Entropies");
-		printOneDimensionDoubleList(validEntropies, "Validation Entropies");
 		
 		// predict the labels
 		trainError = predictLabels(trainData, trainOutPath);
@@ -557,35 +491,6 @@ public class neuralnet {
 		
 	}
 	
-	// TODO : delete this
-	private static void printOneDimensionDoubleList(List<Double> lst, String name) {
-		System.out.println("Print List : " + name);
-		System.out.print("<");
-		for (Double d : lst) {
-			System.out.print(d);
-			System.out.print(", ");
-		}
-		System.out.println(">");
-	}
-	
-	// TODO : delete this
-	private static void printDoubleMatrix(List<List<Double>> m, String name) {
-		assert(m != null);
-		
-		System.out.println("Print Matrix : " + name);
-		System.out.println("<");
-		for (int i = 0; i < m.size(); i ++) {
-			System.out.print("<");
-			for (int j = 0; j < m.get(i).size(); j ++) {
-				if (j != 0) {
-					System.out.print(", ");
-				}
-				System.out.print(m.get(i).get(j));
-			}
-			System.out.println(">");
-		}
-		System.out.println(">");
-	}
 }
 
 

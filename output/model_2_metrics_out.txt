@@ -1,12 +1,12 @@
-epoch=1 crossentropy(train): 2.107979297304442
-epoch=1 crossentropy(validation): 2.1156810888839614
-epoch=2 crossentropy(train): 1.7459881278690612
-epoch=2 crossentropy(validation): 1.7919553403735387
-epoch=3 crossentropy(train): 1.4791526228125003
-epoch=3 crossentropy(validation): 1.5916370811621967
-epoch=4 crossentropy(train): 1.2665151480424222
-epoch=4 crossentropy(validation): 1.443545951570541
-epoch=5 crossentropy(train): 1.132386223824442
-epoch=5 crossentropy(validation): 1.372826880974827
-error(train): 0.474
-error(validation): 0.56
+epoch=1 crossentropy(train): 2.185062761138787
+epoch=1 crossentropy(validation): 2.1882730258814203
+epoch=2 crossentropy(train): 1.9010325772656411
+epoch=2 crossentropy(validation): 1.9136380346124435
+epoch=3 crossentropy(train): 1.80661098470475
+epoch=3 crossentropy(validation): 1.8286100067049553
+epoch=4 crossentropy(train): 1.757133928766933
+epoch=4 crossentropy(validation): 1.785882952964601
+epoch=5 crossentropy(train): 1.7250825745641507
+epoch=5 crossentropy(validation): 1.7583441528403003
+error(train): 0.728
+error(validation): 0.77
