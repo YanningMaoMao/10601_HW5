@@ -311,7 +311,6 @@ public class neuralnet {
 				
 				// J = −y^T log(yHat)
 				int label = trainData.getLabel(i);
-				double j = (-1) * (Math.log(yHat.get(label)));
 				
 				// ------ NNBackward ------ //
 				
@@ -492,6 +491,5 @@ public class neuralnet {
 	}
 	
 }
-
 
 
