@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-public class neuralnet {
+public class empirical {
 	
 	/* ------------ constants --------------- */
 	
@@ -354,11 +354,14 @@ public class neuralnet {
 				updateBeta(gBeta);
 			
 			}
-			
-			// ------ calculate cross entropy ------ //
+
 			trainEntropies.add(getEntropy(trainData));
 			validEntropies.add(getEntropy(validData));
+
 		}
+		
+		// ------ calculate cross entropy ------ //
+		// trainEntropies.add(getEntropy(trainData));
 	}
 	
 	private static double predictLabels(CSVReader data, String outPath) throws FileNotFoundException {
@@ -418,20 +421,16 @@ public class neuralnet {
 		// output the entropies
 		for (int epoch = 0; epoch < numEpochs; epoch ++) {
 			// output entropy for training data
-			String trainStr = "epoch=" + (epoch + 1) + " crossentropy(train): ";
-			trainStr += trainEntropies.get(epoch);
-			wr.println(trainStr);
+			// String trainStr = crossentropy(train): ";
+			// trainStr += trainEntropies.get(epoch);
+			wr.print(trainEntropies.get(epoch) + ",");
 			// output entropy for validation data
-			String validStr = "epoch=" + (epoch + 1) + " crossentropy(validation): ";
-			validStr += validEntropies.get(epoch);
-			wr.println(validStr);
+			// String validStr = "epoch=" + (epoch + 1) + " crossentropy(validation): ";
+			// validStr += validEntropies.get(epoch);
+			wr.println(validEntropies.get(epoch));
 		}
 		
-		// output error rates
-		String trainStr = "error(train): " + trainError;
-		String validStr = "error(validation): " + validError;
-		wr.println(trainStr);
-		wr.println(validStr);
+		// wr.println(trainStr);
 		
 		wr.close();
 	}
@@ -479,9 +478,13 @@ public class neuralnet {
 		// train the model
 		trainModel();
 		
+		// print the entropies
+		System.out.println("Train Entropy : " + trainEntropies.get(0));
+		System.out.println("Validation Entropy : " + validEntropies.get(0));
+		
 		// predict the labels
-		trainError = predictLabels(trainData, trainOutPath);
-		validError = predictLabels(validData, validOutPath);
+		// trainError = predictLabels(trainData, trainOutPath);
+		// validError = predictLabels(validData, validOutPath);
 
 		// output the entropies and prediction error rates
 		outputMetrics();
